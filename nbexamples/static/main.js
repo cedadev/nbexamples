@@ -11,7 +11,7 @@ define(function(require) {
         '    <div class="col-sm-10 no-padding">',
         '      <span id="examples_list_info" class="toolbar_info">A shared collection of notebooks. To contribute a new notebook to the list of community examples, open it and click the <span class="fa fa-share-alt" style="margin: 3px;"></span> button.</span>',
         '    </div>',
-        '    <div class="col-sm-4 no-padding tree-buttons">',
+        '    <div class="col-sm-2 no-padding tree-buttons">',
         '      <span id="examples_buttons" class="pull-right toolbar_buttons">',
         '      <button id="refresh_examples_list" title="Refresh examples list" class="btn btn-default btn-xs"><i class="fa fa-refresh"></i></button>',
         '      </span>',
