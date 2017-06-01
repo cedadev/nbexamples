@@ -119,12 +119,11 @@ class Examples(LoggingConfigurable):
             if os.path.exists(dest):
                 prev = nbformat.read(dest, nbformat.NO_CONVERT)
                 # If there is sharing info, use that as the user
-                shared_by = nb.metadata.get('sharing_info', {}).get('shared_by', None)
+                shared_by = prev.metadata.get('sharing_info', {}).get('shared_by', None)
                 # If not, use info from the file
                 if not shared_by:
-                    st = os.stat(dest)
                     try:
-                        user = pwd.getpwuid(st.st_uid)
+                        user = pwd.getpwuid(os.stat(dest).st_uid)
                     except KeyError:
                         shared_by = None
                     else:
