@@ -86,12 +86,20 @@ class Examples(LoggingConfigurable):
         # Make a copy of the example notebook, stripping output.
         p = sp.Popen(['jupyter', 'nbconvert', example_id,
                       '--Exporter.preprocessors=["nbexamples.strip_output.StripOutput"]',
-                      '--to', 'notebook', '--output', abs_dest],
+                      '--to', 'notebook', '--stdout'],
                      stdout=sp.PIPE, stderr=sp.PIPE)
         output, err = p.communicate()
         retcode = p.poll()
         if retcode != 0:
             raise RuntimeError('jupyter nbconvert exited with error {}'.format(err))
+        # Strip the sharing_info if present
+        nb = nbformat.reads(output.decode(), nbformat.NO_CONVERT)
+        if 'sharing_info' in nb.metadata:
+            del nb.metadata['sharing_info']
+        try:
+            nbformat.write(nb, abs_dest)
+        except OSError:
+            raise web.HTTPError(403, 'Could not write to notebook directory')
         # Return the possibly suffixed filename
         return os.path.split(abs_dest)[1]
 
@@ -102,7 +110,7 @@ class Examples(LoggingConfigurable):
         dest = os.path.join(self.unreviewed_example_dir, filename)
         if os.path.exists(dest):
             raise web.HTTPError(
-                401,
+                409,
                 'Another user already shared a notebook with the name {}'.format(filename)
             )
         nb = nbformat.read(src, nbformat.NO_CONVERT)
@@ -116,7 +124,7 @@ class Examples(LoggingConfigurable):
         try:
             nbformat.write(nb, dest)
         except OSError:
-            raise web.HTTPError(401, 'Could not write to the examples directory')
+            raise web.HTTPError(403, 'Could not write to the examples directory')
         return dest
 
     def preview_example(self, filepath):
@@ -132,6 +140,14 @@ class Examples(LoggingConfigurable):
         return output.decode()
 
     def delete_example(self, filepath):
+        # In a JupyterHub context, prevent deletion if the hub_user is not the
+        # sharing user
+        hub_user = getattr(self.parent, 'user')
+        if hub_user:
+            nb = nbformat.read(filepath, nbformat.NO_CONVERT)
+            shared_by = nb.metadata.get('sharing_info', {}).get('shared_by', None)
+            if shared_by and hub_user != shared_by:
+                raise web.HTTPError(403, 'Notebook {} does not belong to you!'.format(filepath))
         os.remove(filepath)
 
 
