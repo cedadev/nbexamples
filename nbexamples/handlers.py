@@ -88,12 +88,7 @@ class Examples(LoggingConfigurable):
 
     def submit_example(self, user_filepath):
         # Make a copy of the example notebook
-        # If we are running in a JupyterHub context, attach the current JupyterHub
-        # user as the sharing user in metadata
-        # This allows us to play nice with Docker-style setups where each JupyterHub
-        # user gets a container with the same user (normally jovyan)
         src = os.path.join(self.parent.notebook_dir, user_filepath)
-        nb = nbformat.read(src, nbformat.NO_CONVERT)
         filename = os.path.basename(user_filepath)
         dest = os.path.join(self.unreviewed_example_dir, filename)
         if os.path.exists(dest):
@@ -101,6 +96,14 @@ class Examples(LoggingConfigurable):
                 401,
                 'Another user already shared a notebook with the name {}'.format(filename)
             )
+        nb = nbformat.read(src, nbformat.NO_CONVERT)
+        # If we are running in a JupyterHub context, attach the current JupyterHub
+        # user as the sharing user in metadata
+        # This allows us to play nice with Docker-style setups where each JupyterHub
+        # user gets a container with the same user (normally jovyan)
+        user = getattr(this.parent, 'user')
+        if user:
+            self.log.info("Shared by: {}".format(user))
         try:
             nbformat.write(nb, dest)
         except OSError:
