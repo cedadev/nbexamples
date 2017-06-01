@@ -22,7 +22,7 @@ define([
         '     <div class="form-group">',
         '      <label class="col-sm-3 control-label" for="nbexamples-clone-name">Save Copy As</label>',
         '      <div class="col-sm-9">',
-        '       <input type="text" name="dest" id="nbexamples-clone-name" />',
+        '       <input class="form-control" type="text" name="dest" id="nbexamples-clone-name" />',
         '       <input type="hidden" name="example_id" />',
         '      </div>',
         '     </div>',
