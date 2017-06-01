@@ -87,7 +87,6 @@ class Examples(LoggingConfigurable):
         return os.path.split(abs_dest)[1]
 
     def submit_example(self, user_filepath):
-        self.log.info(self.parent.user)
         # Make a copy of the example notebook
         src = os.path.join(self.parent.notebook_dir, user_filepath)
         filename = os.path.basename(user_filepath)
