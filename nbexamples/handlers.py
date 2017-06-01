@@ -82,12 +82,12 @@ class Examples(LoggingConfigurable):
         output, err = p.communicate()
         retcode = p.poll()
         if retcode != 0:
-            raise RuntimeError('jupyter nbconvert exited with error {}'.format(
-                               err))
+            raise RuntimeError('jupyter nbconvert exited with error {}'.format(err))
         # Return the possibly suffixed filename
         return os.path.split(abs_dest)[1]
 
     def submit_example(self, user_filepath):
+        print(self.parent.user)
         # Make a copy of the example notebook
         src = os.path.join(self.parent.notebook_dir, user_filepath)
         filename = os.path.basename(user_filepath)
