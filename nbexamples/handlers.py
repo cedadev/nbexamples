@@ -101,7 +101,7 @@ class Examples(LoggingConfigurable):
         # user as the sharing user in metadata
         # This allows us to play nice with Docker-style setups where each JupyterHub
         # user gets a container with the same user (normally jovyan)
-        user = getattr(this.parent, 'user')
+        user = getattr(self.parent, 'user')
         if user:
             self.log.info("Shared by: {}".format(user))
         try:
