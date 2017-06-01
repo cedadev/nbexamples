@@ -89,6 +89,8 @@ class Examples(LoggingConfigurable):
     def submit_example(self, user_filepath):
         # Make a copy of the example notebook
         src = os.path.join(self.parent.notebook_dir, user_filepath)
+        node = nbformat.read(src, nbformat.NO_CONVERT)
+        self.log.info(repr(node))
         filename = os.path.basename(user_filepath)
         dest = os.path.join(self.unreviewed_example_dir, filename)
         try:
