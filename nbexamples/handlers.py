@@ -103,7 +103,7 @@ class Examples(LoggingConfigurable):
         # user gets a container with the same user (normally jovyan)
         user = getattr(self.parent, 'user')
         if user:
-            self.log.info(repr(nb.metadata))
+            nb.metadata.setdefault('sharing_info', {})['shared_by'] = user
         try:
             nbformat.write(nb, dest)
         except OSError:
