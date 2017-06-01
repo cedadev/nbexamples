@@ -88,20 +88,23 @@ class Examples(LoggingConfigurable):
 
     def submit_example(self, user_filepath):
         # Make a copy of the example notebook
+        # If we are running in a JupyterHub context, attach the current JupyterHub
+        # user as the sharing user in metadata
+        # This allows us to play nice with Docker-style setups where each JupyterHub
+        # user gets a container with the same user (normally jovyan)
         src = os.path.join(self.parent.notebook_dir, user_filepath)
-        node = nbformat.read(src, nbformat.NO_CONVERT)
-        self.log.info(repr(node))
+        nb = nbformat.read(src, nbformat.NO_CONVERT)
         filename = os.path.basename(user_filepath)
         dest = os.path.join(self.unreviewed_example_dir, filename)
+        if os.path.exists(dest):
+            raise web.HTTPError(
+                401,
+                'Another user already shared a notebook with the name {}'.format(filename)
+            )
         try:
-            shutil.copyfile(src, dest)
-        except OSError as ex:
-            # python 2/3 compatibility permission error check
-            if ex.errno == errno.EACCES:
-                if os.path.exists(dest):
-                    raise web.HTTPError(401, 'Another user already shared a notebook with the name {}'.format(filename))
-                else:
-                    raise web.HTTPError(401, 'Could not write to the examples directory')
+            nbformat.write(nb, dest)
+        except OSError:
+            raise web.HTTPError(401, 'Could not write to the examples directory')
         return dest
 
     def preview_example(self, filepath):
