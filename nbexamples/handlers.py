@@ -46,24 +46,33 @@ class Examples(LoggingConfigurable):
         dirs = [self.reviewed_example_dir, self.unreviewed_example_dir]
         all_examples = []
         uid = os.getuid()
+        hub_user = getattr(self.parent, 'user')
         for category, d in zip(categories, dirs):
             filepaths = glob.glob(os.path.join(d, '*.ipynb'))
             examples = [{'filepath': os.path.abspath(fp)} for fp in filepaths]
             for example in examples:
-                node = nbformat.read(example['filepath'], nbformat.NO_CONVERT)
+                nb = nbformat.read(example['filepath'], nbformat.NO_CONVERT)
                 st = os.stat(example['filepath'])
-                try:
-                    user = pwd.getpwuid(st.st_uid)
-                except KeyError:
-                    example['user'] = None
-                else:
-                    example['user'] = user.pw_gecos or user.pw_name
+                # If there is sharing info, use that as the user
+                shared_by = nb.metadata.get('sharing_info', {}).get('shared_by', None)
+                # If not, use info from the file
+                if not shared_by:
+                    try:
+                        user = pwd.getpwuid(st.st_uid)
+                    except KeyError:
+                        shared_by = None
+                    else:
+                        shared_by = user.pw_gecos or user.pw_name
+                example['user'] = shared_by
                 example['datetime'] = st.st_mtime
                 example['filename'] = os.path.basename(example['filepath'])
-                example['metadata'] = node.metadata
+                example['metadata'] = nb.metadata
                 example['category'] = category
                 example['basename'] = os.path.basename(example['filepath'])
-                example['owned'] = st.st_uid == uid
+                if hub_user:
+                    example['owned'] = hub_user == shared_by
+                else:
+                    example['owned'] = st.st_uid == uid
             all_examples.extend(examples)
         return all_examples
 
