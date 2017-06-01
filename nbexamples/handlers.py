@@ -108,23 +108,53 @@ class Examples(LoggingConfigurable):
         src = os.path.join(self.parent.notebook_dir, user_filepath)
         filename = os.path.basename(user_filepath)
         dest = os.path.join(self.unreviewed_example_dir, filename)
-        if os.path.exists(dest):
-            raise web.HTTPError(
-                409,
-                'Another user already shared a notebook with the name {}'.format(filename)
-            )
-        nb = nbformat.read(src, nbformat.NO_CONVERT)
-        # If we are running in a JupyterHub context, attach the current JupyterHub
-        # user as the sharing user in metadata
-        # This allows us to play nice with Docker-style setups where each JupyterHub
-        # user gets a container with the same user (normally jovyan)
-        user = getattr(self.parent, 'user')
-        if user:
-            nb.metadata.setdefault('sharing_info', {})['shared_by'] = user
-        try:
-            nbformat.write(nb, dest)
-        except OSError:
-            raise web.HTTPError(403, 'Could not write to the examples directory')
+        hub_user = getattr(self.parent, 'user')
+        if hub_user:
+            # If we are running in a JupyterHub context, attach the current JupyterHub
+            # user as the sharing user in metadata
+            # This allows us to play nice with Docker-style setups where each JupyterHub
+            # user gets a container with the same user (normally jovyan)
+            # If the dest already exists, we need to compare the current hub user
+            # to the sharing user to determine if we are allowed to overwrite
+            if os.path.exists(dest):
+                prev = nbformat.read(dest, nbformat.NO_CONVERT)
+                # If there is sharing info, use that as the user
+                shared_by = nb.metadata.get('sharing_info', {}).get('shared_by', None)
+                # If not, use info from the file
+                if not shared_by:
+                    st = os.stat(dest)
+                    try:
+                        user = pwd.getpwuid(st.st_uid)
+                    except KeyError:
+                        shared_by = None
+                    else:
+                        shared_by = user.pw_gecos or user.pw_name
+                if shared_by != hub_user:
+                    raise web.HTTPError(
+                        409,
+                        'Another user already shared a notebook with the name {}'.format(filename)
+                    )
+            nb = nbformat.read(src, nbformat.NO_CONVERT)
+            nb.metadata.setdefault('sharing_info', {})['shared_by'] = hub_user
+            try:
+                nbformat.write(nb, dest)
+            except OSError:
+                raise web.HTTPError(403, 'Could not write to the examples directory')
+        else:
+            # If we are not in a JupyterHub context, just do a straight copy and
+            # let the filesystem deal with permissions
+            try:
+                shutil.copyfile(src, dest)
+            except OSError as ex:
+                # python 2/3 compatibility permission error check
+                if ex.errno == errno.EACCES:
+                    if os.path.exists(dest):
+                        raise web.HTTPError(
+                            409,
+                            'Another user already shared a notebook with the name {}'.format(filename)
+                        )
+                    else:
+                        raise web.HTTPError(403, 'Could not write to the examples directory')
         return dest
 
     def preview_example(self, filepath):
