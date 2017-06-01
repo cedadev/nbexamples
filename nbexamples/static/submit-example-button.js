@@ -20,7 +20,7 @@ define(['jquery', 'base/js/namespace', 'base/js/utils'], function ($, Jupyter, u
         if ($("#submit-example-button").length === 0) {
             Jupyter.toolbar.add_buttons_group([{
               'label'   : 'Share as Example',
-              'icon'    : 'fa-send',
+              'icon'    : 'fa-share-alt',
               'callback': submit_example,
               'id'      : 'submit-example-button'
             }]);
